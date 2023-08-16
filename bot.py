@@ -3,6 +3,9 @@ from discord.ext import commands
 import requests
 import urllib.parse
 import asyncio
+import os
+import aiohttp
+import random
 import base64
 import io
 
@@ -27,7 +30,7 @@ template_list = {
 document_counter = 1
 
 async def get_user_account():
-    global API_KEY  # Use the global variable to store the API key
+    global API_KEY 
     if API_KEY:
         headers = {
             'Authorization': f'Bearer {API_KEY}',
@@ -58,7 +61,7 @@ async def fetch_document_details(document_id):
 bot.remove_command('help')
 
 
-user_image_limit = 10
+user_image_limit = 10 # number img generations per user
 user_image_counter = {}
 
 @bot.command()
@@ -76,66 +79,46 @@ async def image(ctx, *, prompt):
 
     headers = {
         'Authorization': f'Bearer {API_KEY}',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded'
     }
 
-    response = requests.get(API_URL, headers=headers)
+    payload = {
+        'prompt': prompt,
+        'name': 'Generated Image',
+        'description': prompt,
+        'resolution': '1024x1024', #the higher the better
+    }
 
-    if response.status_code != 200:
-        await ctx.send("Image generation failed. Please try again.")
-        return
+    response = requests.post('https://starsky.pro/api/v1/images', headers=headers, data=payload)
 
-    data = response.json().get('data', [])
-    if data:
-        image = data[0]
+    if response.status_code == 201:
+        image_id = response.json().get('data', {}).get('id')
 
-        image_url = image.get('url')
+        # Fetch image details
+        image_details_response = requests.get(f'https://starsky.pro/api/v1/images/{image_id}', headers=headers)
+        if image_details_response.status_code == 200:
+            image_details = image_details_response.json().get('data', {})
 
-        if not image_url:
-            await ctx.send("Image URL not found. Please try again.")
-            return
+            image_url = image_details.get('url', '')
+            image_result = image_details.get('result', '')
 
-        embed = discord.Embed(title="Starsky Bot Image Generator", color=discord.Color.brand_red())
-        embed.set_image(url=image_url)
-        embed.add_field(name="Prompt:", value=prompt, inline=False)
+            embed = discord.Embed(title="Starsky Bot Image Generator", color=discord.Color.brand_red())
+            embed.add_field(name="Prompt:", value=prompt, inline=False)
 
-        generated_message = await ctx.send(embed=embed)
-        await generated_message.add_reaction('🔄')
-
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) == '🔄' and reaction.message.id == generated_message.id
-
-        try:
-            while True:
-                reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
-                await generated_message.remove_reaction('🔄', user)
-
-                response = requests.get(API_URL, headers=headers)
-
-                if response.status_code != 200:
-                    await ctx.send("Image generation failed. Please try again.")
-                    return
-
-                data = response.json().get('data', [])
-                if data:
-                    image = data[0]
-
-                    image_url = image.get('url')
-
-                    if not image_url:
-                        await ctx.send("Image URL not found. Please try again.")
-                        return
-
-                    embed.set_image(url=image_url)
-
-                    await generated_message.edit(embed=embed)
-                else:
-                    await ctx.send("Image generation failed. Please try again.")
-                    return
-        except asyncio.TimeoutError:
-            await generated_message.remove_reaction('🔄', bot.user)
+            if image_url:
+                embed.set_image(url=image_url)
+                await ctx.send(embed=embed)
+            else:
+                await ctx.send("Failed to fetch the generated image.")
+        else:
+            await ctx.send("Failed to fetch image details.")
     else:
         await ctx.send("Image generation failed. Please try again.")
+
+    if not API_KEY:
+        await ctx.send("API key is not valid. Please run `$setup` to provide a valid API key.")
+
 
 @bot.command()
 async def account(ctx):
@@ -267,4 +250,4 @@ async def help(ctx):
     embed.add_field(name="$setup", value="Set up your Starsky API key.", inline=False)
     await ctx.send(embed=embed)
 
-bot.run('Your bot token')
+bot.run('YOUR TOKEN GOES HERE')
