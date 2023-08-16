@@ -25,7 +25,7 @@ View available templates or create a new document using a selected template. If 
 
 ### `$image [prompt]`
 
-Generate an image using the Starsky AI based on the provided prompt. This command allows you to interactively regenerate images by reacting with 🔄.
+Generate an image using the Starsky AI based on the provided prompt. This command allows you to interactively regenerate images by reacting with 🔄. (in work)
 
 ### `$setup`
 
