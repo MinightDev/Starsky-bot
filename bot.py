@@ -281,4 +281,4 @@ async def help(ctx):
     embed.add_field(name="$setup", value="Set up your Starsky API key.", inline=False)
     await ctx.send(embed=embed)
 
-bot.run('MTEzMTYwMjU1ODkxODU5MDQ4NA.GtpkIF.teyEypGlABDA54Cq2a2avWTICr4hApJBqU0NZI')
+bot.run('')
