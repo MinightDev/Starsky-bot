@@ -16,7 +16,8 @@ bot = commands.Bot(command_prefix='$', intents=intents)
 
 API_URL = 'https://starsky.pro/api/v1/documents'
 ACCOUNT_URL = 'https://starsky.pro/api/v1/account'
-API_KEY = None
+API_KEY = None  # Initialize API key as None
+API_KEY_2 = 'sk-psYJ1ZYCJ6exnnAhH8kIutDO9DezJVSg3lXByxby3p2Ki41t'
 
 template_list = {
     1: "Freestyle",
@@ -42,7 +43,7 @@ async def get_user_account():
 @bot.event
 async def on_ready():
     print('Starsky is ready!')
-    await bot.change_presence(activity=discord.Game(name="✨ Starsky.pro"))
+    await bot.change_presence(activity=discord.Game(name="✨ Starsky V2 on the way!!"))
 
 async def fetch_document_details(document_id):
     headers = {
@@ -55,6 +56,7 @@ async def fetch_document_details(document_id):
         return document
     return None
 
+# Remove the default 'help' command to replace it with a custom one
 bot.remove_command('help')
 
 
@@ -74,66 +76,77 @@ async def image(ctx, *, prompt):
 
     user_image_counter[user_id] += 1
 
-    headers = {
-        'Authorization': f'Bearer {API_KEY}',
-        'Accept': 'application/json'
+    url = "https://api.stability.ai/v1/generation/stable-diffusion-xl-beta-v2-2-2/text-to-image"
+    body = {
+        "width": 512,
+        "height": 512,
+        "steps": 50,
+        "seed": 0,
+        "cfg_scale": 7,
+        "samples": 1,
+        "style_preset": "enhance",
+        "text_prompts": [
+            {
+                "text": prompt,
+                "weight": 1
+            }
+        ],
     }
 
-    response = requests.get(API_URL, headers=headers)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {API_KEY_2}",
+    }
+
+    response = requests.post(url, headers=headers, json=body)
 
     if response.status_code != 200:
         await ctx.send("Image generation failed. Please try again.")
         return
 
-    data = response.json().get('data', [])
-    if data:
-        image = data[0]
+    data = response.json()
+    if "artifacts" in data:
+        for i, image in enumerate(data["artifacts"]):
+            image_data = base64.b64decode(image["base64"])
+            file = discord.File(fp=io.BytesIO(image_data), filename=f"txt2img_{image['seed']}.png")
 
-        image_url = image.get('url')
+            embed = discord.Embed(title="Starsky Bot Image Generator", color=discord.Color.brand_red())
+            embed.set_image(url=f"attachment://txt2img_{image['seed']}.png")
+            embed.add_field(name="Prompt:", value=prompt, inline=False)
 
-        if not image_url:
-            await ctx.send("Image URL not found. Please try again.")
-            return
+            generated_message = await ctx.send(content="Generated :sunglasses:", embed=embed, file=file)
+            await generated_message.add_reaction('🔄')
 
-        embed = discord.Embed(title="Starsky Bot Image Generator", color=discord.Color.brand_red())
-        embed.set_image(url=image_url)
-        embed.add_field(name="Prompt:", value=prompt, inline=False)
+            def check(reaction, user):
+                return user == ctx.author and str(reaction.emoji) == '🔄' and reaction.message.id == generated_message.id
 
-        generated_message = await ctx.send(embed=embed)
-        await generated_message.add_reaction('🔄')
+            try:
+                while True:
+                    reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+                    await generated_message.remove_reaction('🔄', user)
 
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) == '🔄' and reaction.message.id == generated_message.id
+                    # Regenerate the image and update the embed
+                    response = requests.post(url, headers=headers, json=body)
 
-        try:
-            while True:
-                reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
-                await generated_message.remove_reaction('🔄', user)
-
-                response = requests.get(API_URL, headers=headers)
-
-                if response.status_code != 200:
-                    await ctx.send("Image generation failed. Please try again.")
-                    return
-
-                data = response.json().get('data', [])
-                if data:
-                    image = data[0]
-
-                    image_url = image.get('url')
-
-                    if not image_url:
-                        await ctx.send("Image URL not found. Please try again.")
+                    if response.status_code != 200:
+                        await ctx.send("Image generation failed. Please try again.")
                         return
 
-                    embed.set_image(url=image_url)
+                    data = response.json()
+                    if "artifacts" in data:
+                        for i, image in enumerate(data["artifacts"]):
+                            image_data = base64.b64decode(image["base64"])
+                            file = discord.File(fp=io.BytesIO(image_data), filename=f"txt2img_{image['seed']}.png")
 
-                    await generated_message.edit(embed=embed)
-                else:
-                    await ctx.send("Image generation failed. Please try again.")
-                    return
-        except asyncio.TimeoutError:
-            await generated_message.remove_reaction('🔄', bot.user)
+                            embed.set_image(url=f"attachment://txt2img_{image['seed']}.png")
+
+                            await generated_message.edit(embed=embed, file=file)
+                    else:
+                        await ctx.send("Image generation failed. Please try again.")
+                        return
+            except asyncio.TimeoutError:
+                await generated_message.remove_reaction('🔄', bot.user)
     else:
         await ctx.send("Image generation failed. Please try again.")
 
@@ -185,7 +198,7 @@ async def templates(ctx, template_id: int = None):
     used_words = int(account_info.get('words_month_count', 0))
 
     if used_words >= total_words:
-        subscription_url = 'https://starsky.pro/pricing'
+        subscription_url = 'https://starsky.pro/pricing'  # Replace this with your actual subscription upgrade URL
         await ctx.send(f"You have exceeded your plan's word limit. Please upgrade your plan [here]({subscription_url}).")
         return
 
@@ -203,6 +216,7 @@ async def templates(ctx, template_id: int = None):
         'template_id': template_id
     }
 
+    # URL-encode the payload data
     encoded_payload = urllib.parse.urlencode(payload).encode('utf-8')
 
     headers = {
@@ -267,4 +281,4 @@ async def help(ctx):
     embed.add_field(name="$setup", value="Set up your Starsky API key.", inline=False)
     await ctx.send(embed=embed)
 
-bot.run('')
+bot.run('MTEzMTYwMjU1ODkxODU5MDQ4NA.GtpkIF.teyEypGlABDA54Cq2a2avWTICr4hApJBqU0NZI')
