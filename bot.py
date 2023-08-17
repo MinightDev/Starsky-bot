@@ -15,7 +15,7 @@ intents.presences = False
 intents.reactions = True
 
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='$', intents=intents)
+bot = commands.Bot(command_prefix='$', intents=intents)  #command prefix '$'
 
 API_URL = 'https://starsky.pro/api/v1/documents'
 ACCOUNT_URL = 'https://starsky.pro/api/v1/account'
@@ -24,7 +24,7 @@ API_KEY = None
 template_list = {
     1: "Freestyle",
     2: "About us",
-    3: "Advertisement",
+    3: "Advertisement", #check https://starsky.pro/developers/images
 }
 
 document_counter = 1
@@ -61,7 +61,7 @@ async def fetch_document_details(document_id):
 bot.remove_command('help')
 
 
-user_image_limit = 10 # number img generations per user
+user_image_limit = 10 # number image generations per user
 user_image_counter = {}
 
 @bot.command()
@@ -87,7 +87,7 @@ async def image(ctx, *, prompt):
         'prompt': prompt,
         'name': 'Generated Image',
         'description': prompt,
-        'resolution': '1024x1024', #the higher the better
+        'resolution': '1024x1024', #Possible values are: 256x256 for 256×256, 512x512 for 512×512, 1024x1024 for 1024×1024.
     }
 
     response = requests.post('https://starsky.pro/api/v1/images', headers=headers, data=payload)
