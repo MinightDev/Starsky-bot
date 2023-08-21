@@ -6,6 +6,10 @@
 
 Starsky Bot is a Discord bot that interacts with the Starsky API to generate documents and images using AI. This bot allows you to create documents based on templates, retrieve account information, and generate images based on prompts.
 
+<p align="center">
+  <img src="[https://starsky.pro/uploads/brand/cEKpGkKA8tD5P2nKh47CsigASMEwJCWRn4k3dRW5.png](https://i.ytimg.com/vi/pCyh0GO_gIE/maxresdefault.jpg)" alt="Starsky Bot Logo" width="200">
+</p>
+
 ## Features
 
 - Create documents using various templates.
