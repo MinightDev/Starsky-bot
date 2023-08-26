@@ -25,7 +25,7 @@ View available templates or create a new document using a selected template. If 
 
 ### `$image [prompt]`
 
-Generate an image using the Starsky AI based on the provided prompt. This command allows you to interactively regenerate images by reacting with 🔄. (in work)
+Generate an image using the Starsky AI based on the provided prompt. This command allows you to interactively regenerate images by reacting with 🔄.
 
 ### `$setup`
 
@@ -57,7 +57,7 @@ Before starting the bot, run the `install.sh` script to install the required dep
 ```bash
 chmod +x install.sh
 ./install.sh
-```
+
 ## Customization
 
 Feel free to modify and customize this code to better suit your requirements. Whether you want to add new features, adjust command behavior, or integrate additional APIs, this code serves as a starting point for your own creative ideas. You're encouraged to make changes, experiment, and adapt the bot to your specific use cases.

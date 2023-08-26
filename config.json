@@ -1,0 +1,5 @@
+{
+    "api_key": "YOUR_STARSKY_API_KEY",
+    "bot_token": "YOUR_DISCORD_BOT_TOKEN",
+    "image_resolution": "1024x1024"
+}

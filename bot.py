@@ -8,23 +8,79 @@ import aiohttp
 import random
 import base64
 import io
+import json
 
 intents = discord.Intents.default()
 intents.typing = False
 intents.presences = False
 intents.reactions = True
 
+# Load confg from config.json
+with open('config.json', 'r') as config_file:
+    config = json.load(config_file)
+
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='$', intents=intents)  #command prefix '$'
+bot = commands.Bot(command_prefix='$', intents=intents)
 
 API_URL = 'https://starsky.pro/api/v1/documents'
 ACCOUNT_URL = 'https://starsky.pro/api/v1/account'
-API_KEY = None
+API_KEY = config.get("api_key")
+BOT_TOKEN = config.get("bot_token")
+IMAGE_RESOLUTION = config.get("image_resolution", "1024x1024")
 
 template_list = {
     1: "Freestyle",
     2: "About us",
-    3: "Advertisement", #check https://starsky.pro/developers/images
+    3: "Advertisement",
+    4: "Article",
+    5: "Blog intro",
+    6: "Blog outline",
+    7: "Blog outro",
+    8: "Blog paragraph",
+    9: "Blog post",
+    10: "Blog section",
+    11: "Blog talking points",
+    12: "Blog title",
+    13: "Call to action",
+    14: "Content rewrite",
+    15: "Content summary",
+    16: "FAQ",
+    17: "Hashtags",
+    18: "Headline",
+    19: "How it works",
+    20: "Meta description",
+    21: "Meta keywords",
+    22: "Mission statement",
+    23: "Newsletter",
+    24: "Pain-Agitate-Solution",
+    25: "Paragraph",
+    26: "Press release",
+    27: "Social post",
+    28: "Social post caption",
+    29: "Startup ideas",
+    30: "Startup names",
+    31: "Subheadline",
+    32: "Testimonial",
+    33: "Social media quote",
+    34: "Social media bio",
+    35: "Value proposition",
+    36: "Video description",
+    37: "Video script",
+    38: "Video tags",
+    39: "Video title",
+    40: "Vision statement",
+    41: "Product sheet",
+    42: "Welcome email",
+    43: "Push notification",
+    44: "Blog listicle",
+    45: "Content grammar",
+    46: "Blog tags",
+    47: "Pros and cons",
+    48: "Google advertisement",
+    49: "Facebook advertisement",
+    50: "Job description",
+    51: "Review",
+    52: "Feature section"
 }
 
 document_counter = 1
@@ -61,8 +117,61 @@ async def fetch_document_details(document_id):
 bot.remove_command('help')
 
 
-user_image_limit = 10 # number image generations per user
+user_image_limit = 10 # number img generations per user
 user_image_counter = {}
+
+async def regenerate_image(ctx, prompt, embed):
+    headers = {
+        'Authorization': f'Bearer {API_KEY}',
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+
+    payload = {
+        'prompt': prompt,
+        'name': 'Generated Image',
+        'description': prompt,
+        'resolution': IMAGE_RESOLUTION,
+    }
+
+    response = requests.post('https://starsky.pro/api/v1/images', headers=headers, data=payload)
+
+    if response.status_code == 201:
+        image_id = response.json().get('data', {}).get('id')
+
+        image_details_response = requests.get(f'https://starsky.pro/api/v1/images/{image_id}', headers=headers)
+        if image_details_response.status_code == 200:
+            image_details = image_details_response.json().get('data', {})
+
+            image_url = image_details.get('url', '')
+            image_result = image_details.get('result', '')
+
+            embed.set_image(url=image_url)
+            message = await ctx.send(embed=embed)
+            await message.add_reaction('🔄')
+            await message.add_reaction('⬇️')
+
+            def reaction_check(reaction, user):
+                return (
+                    user == ctx.author
+                    and (str(reaction.emoji) == '🔄' or str(reaction.emoji) == '⬇️')
+                    and reaction.message.id == message.id
+                )
+
+            try:
+                while True:
+                    reaction, user = await bot.wait_for('reaction_add', check=reaction_check, timeout=60)
+                    if str(reaction.emoji) == '🔄':
+                        await regenerate_image(ctx, prompt, embed)
+                    elif str(reaction.emoji) == '⬇️':
+                        await user.send(f"Download your image here: {image_url}")
+            except asyncio.TimeoutError:
+                await message.clear_reactions()
+        else:
+            await ctx.send("Failed to fetch regenerated image details.")
+    else:
+        await ctx.send("Image regeneration failed. Please try again.")
+
 
 @bot.command()
 async def image(ctx, *, prompt):
@@ -87,7 +196,7 @@ async def image(ctx, *, prompt):
         'prompt': prompt,
         'name': 'Generated Image',
         'description': prompt,
-        'resolution': '1024x1024', #Possible values are: 256x256 for 256×256, 512x512 for 512×512, 1024x1024 for 1024×1024.
+        'resolution': IMAGE_RESOLUTION,
     }
 
     response = requests.post('https://starsky.pro/api/v1/images', headers=headers, data=payload)
@@ -95,7 +204,6 @@ async def image(ctx, *, prompt):
     if response.status_code == 201:
         image_id = response.json().get('data', {}).get('id')
 
-        # Fetch image details
         image_details_response = requests.get(f'https://starsky.pro/api/v1/images/{image_id}', headers=headers)
         if image_details_response.status_code == 200:
             image_details = image_details_response.json().get('data', {})
@@ -103,21 +211,34 @@ async def image(ctx, *, prompt):
             image_url = image_details.get('url', '')
             image_result = image_details.get('result', '')
 
-            embed = discord.Embed(title="Starsky Bot Image Generator", color=discord.Color.brand_red())
-            embed.add_field(name="Prompt:", value=prompt, inline=False)
+    embed = discord.Embed(title="Starsky Image Generator", color=discord.Color.brand_red())
+    embed.add_field(name="Prompt:", value=prompt, inline=False)
 
-            if image_url:
-                embed.set_image(url=image_url)
-                await ctx.send(embed=embed)
-            else:
-                await ctx.send("Failed to fetch the generated image.")
-        else:
-            await ctx.send("Failed to fetch image details.")
+    if image_url:
+        embed.set_image(url=image_url)
+        message = await ctx.send(embed=embed)
+        await message.add_reaction('🔄')
+        await message.add_reaction('⬇️')
+
+        def reaction_check(reaction, user):
+            return (
+                user == ctx.author
+                and (str(reaction.emoji) == '🔄' or str(reaction.emoji) == '⬇️')
+                and reaction.message.id == message.id
+            )
+
+        try:
+            while True:
+                reaction, user = await bot.wait_for('reaction_add', check=reaction_check, timeout=60)
+                if str(reaction.emoji) == '🔄':
+                    await regenerate_image(ctx, prompt, embed)
+                elif str(reaction.emoji) == '⬇️':
+                    await user.send(f"Download your image here: {image_url}")
+        except asyncio.TimeoutError:
+            await message.clear_reactions()
     else:
-        await ctx.send("Image generation failed. Please try again.")
+        await ctx.send("Failed to fetch the generated image.")
 
-    if not API_KEY:
-        await ctx.send("API key is not valid. Please run `$setup` to provide a valid API key.")
 
 
 @bot.command()
@@ -225,7 +346,6 @@ async def setup(ctx):
         message = await bot.wait_for('message', check=check_author, timeout=60)
         api_key = message.content.strip()
 
-        # Validate the API key
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Accept': 'application/json'
@@ -250,4 +370,4 @@ async def help(ctx):
     embed.add_field(name="$setup", value="Set up your Starsky API key.", inline=False)
     await ctx.send(embed=embed)
 
-bot.run('YOUR TOKEN GOES HERE')
+bot.run(BOT_TOKEN)

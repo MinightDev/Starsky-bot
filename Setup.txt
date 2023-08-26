@@ -1,0 +1,34 @@
+Setting up your Custom ChatGPT & Midjourney Discord Bot Clone
+
+You're just a few steps away from creating your own AI-powered Discord bot inspired by ChatGPT and Midjourney! This guide will walk you through the setup process to get your bot up and running in no time.
+
+**Before you begin:**
+- Make sure you have Python installed on your system.
+
+**Step 1: Get Your API Key**
+1. Sign in to https://starsky.pro/developers.
+2. Obtain your API key, which will enable your bot to access the Starsky AI capabilities.
+
+**Step 2: Configure Your Bot**
+1. Open the `config.json` file.
+2. Replace `"bot_token"` with your actual Discord bot token.
+3. Replace `"api_key"` with your obtained API key.
+
+**Step 3: Execute the Install Script**
+1. Run the `install.sh` script.
+2. The script will automatically set up the bot environment and start the bot.
+
+**Step 4: Bot Setup**
+1. After running the script, you'll be ready to use the bot. Head to your Discord server.
+2. Use the command `$setup` to link your API key with the bot.
+
+**Step 5: Start Creating**
+1. Your bot is now active! Start generating text documents and stunning images effortlessly.
+2. Use commands like $help or $image and $templates to create content inspired by ChatGPT and Midjourney.
+
+**Need Help?**
+If you're new to the process, don't worry! We've got you covered. Check out our step-by-step video guide on setting up your custom ChatGPT & Midjourney Discord bot clone: https://youtu.be/pCyh0GO_gIE
+
+Remember, you're free to customize and modify the code to match your needs and preferences. Create, innovate, and engage with your community like never before with your own AI-powered Discord bot!
+
+Enjoy the creative journey! 🚀
