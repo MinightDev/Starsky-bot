@@ -325,10 +325,11 @@ async def templates(ctx, template_id: int = None):
 
         if fetched_document:
             result = fetched_document.get('data', {}).get('result', "No result available.")
+            truncated_result = result[:1021] + "..." if len(result) > 1024 else result
 
             embed = discord.Embed(title=f"**Document ID:** {document_id}", color=discord.Color.brand_red())
             embed.add_field(name='**Name**', value=document_name, inline=False)
-            embed.add_field(name='**Result**', value=result, inline=False)
+            embed.add_field(name='**Result**', value=result[:1024], inline=False)
             await ctx.send(embed=embed)
         else:
             await ctx.send("Error fetching document details. Please try again later.")
